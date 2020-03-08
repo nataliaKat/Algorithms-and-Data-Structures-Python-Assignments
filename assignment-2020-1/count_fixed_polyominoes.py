@@ -8,10 +8,7 @@ def find_adj(x, y, n):
             neighbours.remove(nei) 
     return neighbours
 
-
-def make_graph():
-    n = int(sys.argv[2]) if sys.argv[1] == "-p" else int(sys.argv[1])
-
+def make_graph(n):
     g = {}
     for i in range (-n + 2, n):
         for j in range(n):
@@ -20,7 +17,43 @@ def make_graph():
 
     if sys.argv[1] == "-p":
         pprint(g)
+    
+    return g
+
+def get_neighbors_but_from_u(g, u, p):
+    nb = []
+    for a in p:
+        if a != u:
+            for k in g[a]:
+                nb.append(k)
+    return nb
+
+def count_fixed_polyominoes(g, untried, n, p, counter):
+    while untried:
+        u = untried.pop()
+        p.append(u)
+        if len(p) == n:
+            counter.c += 1
+        else:
+            new_neighbors = set()
+            u_neighbors = g.get(u)
+            other_neighbors = get_neighbors_but_from_u(g, u, p)
+            for v in u_neighbors:
+                if v not in untried and v not in p and v not in other_neighbors:
+                    new_neighbors.add(v)
+            new_untried = untried | new_neighbors
+            count_fixed_polyominoes(g, new_untried, n, p, counter)
+        p.remove(u)
+    return counter.c
+
+class Counter:
+    c = 0
 
 
-make_graph()
+n = int(sys.argv[2]) if sys.argv[1] == "-p" else int(sys.argv[1])
+g = make_graph(n)
+counter = Counter()
+
+print(count_fixed_polyominoes(g, {(0,0)}, n, [], counter))
+
 
