@@ -1,4 +1,4 @@
-import sys
+import argparse
 from pprint import pprint
 
 def find_adj(x, y, n):
@@ -15,18 +15,11 @@ def make_graph(n):
             if (j > 0 or j == 0 and i >= 0) and (abs(i) + j < n):
                 g[(i, j)] = find_adj(i, j, n)
 
-    if sys.argv[1] == "-p":
-        pprint(g)
-    
     return g
 
 def get_neighbors_but_from_u(g, u, p):
-    nb = []
-    for a in p:
-        if a != u:
-            for k in g[a]:
-                nb.append(k)
-    return nb
+    ng = [k for a in p if a != u for k in g[a]]
+    return ng
 
 def count_fixed_polyominoes(g, untried, n, p, counter):
     while untried:
@@ -49,8 +42,14 @@ def count_fixed_polyominoes(g, untried, n, p, counter):
 class Counter:
     c = 0
 
-n = int(sys.argv[2]) if sys.argv[1] == "-p" else int(sys.argv[1])
-g = make_graph(n)
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--print", help="print graph", action="store_true")
+parser.add_argument("n", type=int, help="size of polyomino")
+
+args = parser.parse_args()
+g = make_graph(args.n)
+if args.print:
+    pprint(g)
 counter = Counter()
 
-print(count_fixed_polyominoes(g, {(0,0)}, n, [], counter))
+print(count_fixed_polyominoes(g, {(0,0)}, args.n, [], counter))
