@@ -1,10 +1,10 @@
 import argparse
 from pprint import pprint
 
-def find_adj(x, y, n):
+def find_adj(x, y, g):
     neighbours = [(x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)]
     for nei in neighbours[:]:
-        if not ((nei[1] > 0 or nei[1] == 0 and nei[0] >= 0) and (abs(nei[0]) + nei[1] < n)):
+        if not nei in g.keys():
             neighbours.remove(nei) 
     return neighbours
 
@@ -13,8 +13,10 @@ def make_graph(n):
     for i in range (-n + 2, n):
         for j in range(n):
             if (j > 0 or j == 0 and i >= 0) and (abs(i) + j < n):
-                g[(i, j)] = find_adj(i, j, n)
-
+                g[(i, j)] = []
+   
+    for k in g.keys():
+        g[k] = find_adj(k[0], k[1], g)
     return g
 
 def get_neighbors_but_from_u(g, u, p):
