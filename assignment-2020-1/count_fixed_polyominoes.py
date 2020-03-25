@@ -30,7 +30,7 @@ def count_fixed_polyominoes(g, untried, n, p, counter):
             new_neighbors = set()
             u_neighbors = g.get(u)
             # Neighbours of p but of u
-            other_neighbors = [k for a in p if a != u for k in g[a]]
+            other_neighbors = {k for a in p if a != u for k in g[a]}
             for v in u_neighbors:
                 if v not in untried and v not in p and v not in other_neighbors:
                     new_neighbors.add(v)
@@ -39,11 +39,9 @@ def count_fixed_polyominoes(g, untried, n, p, counter):
         p.remove(u)
     return counter.c
 
-class Counter:
-    
+class Counter:    
     def __init__(self):
         self.c = 0
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--print", help="print graph", action="store_true")
