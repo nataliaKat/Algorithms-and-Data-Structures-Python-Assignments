@@ -1,6 +1,7 @@
 from pprint import pprint
 import argparse
 from collections import deque
+from graphviz import Digraph
 
 def create_graph_from_file(input_filenane):
     g = {}
@@ -21,7 +22,7 @@ def get_number_of_neighbours(g, node):
     return len(g[node])
 
 def get_max_edges_node(g):
-    return max(g, key=lambda k: get_number_of_neighbours(k))
+    return max(g, key=lambda k: get_number_of_neighbours(g, k))
 
 def remove_node(g, node):
     for x in g:
@@ -33,11 +34,12 @@ def remove_node(g, node):
 def destroy1(g, n):
     for i in range(n):
         max_edges_node = get_max_edges_node(g)
-        print(max_edges_node, get_number_of_neighbours(max_edges_node))
+        print(max_edges_node, get_number_of_neighbours(g, max_edges_node))
         remove_node(g, max_edges_node)
 
-def get_uball(g, i, r):
+def get_ball(g, i, r):
     ball = set()
+    uball = set()
     q = deque()
     max_node = max(g)
     visited = [False for k in range(max_node)]
@@ -55,38 +57,36 @@ def get_uball(g, i, r):
         level = c[1]
         inqueue[c_node] = False
         visited[c_node] = True
-        if level == r:
+        if  level != 0:
             ball.add(c_node)
+        if level == r:
+            uball.add(c_node)
         for v in g[c_node]:
             if not visited[v] and not inqueue[v]:
                 q.appendleft((v, level + 1))
                 inqueue[v] = True
-
-    return ball
+    # position 0: in and at the surface of the ball 
+    # position 1: only at the surface 
+    return (ball, uball)
                                     
-def get_collective_influence(g, r):
-    u_balls = {k: get_uball(g, k, r) for k in g.keys()}
-    ci = {}
-    for k in u_balls:
-        sum = 0
-        for i in u_balls[k]:
-            sum += get_number_of_neighbours(g, i) - 1
-        ci[k] = (get_number_of_neighbours(g, k) - 1)* sum
+def get_collective_influence(g, node, r):
+    u_balls = get_ball(g, node, r)[1]
+    sum = 0
+    for i in u_balls:
+        sum += get_number_of_neighbours(g, i) - 1
+    ci = (get_number_of_neighbours(g, node) - 1) * sum
     return ci
-    # temp_neighbours = {k: get_number_of_neighbours(g, k) - 1 for k in g.keys()}
-    # return {k: (get_number_of_neighbours(g, k) - 1) * sum(temp_neighbours[i]) for k in g.keys() for i in u_balls[k]}
 
 def destroy2(g, n, r):
+    ci = {k: get_collective_influence(g, k, r) for k in g.keys()}
     for i in range(n):
-        ci = get_collective_influence(g, r)
+        # pprint(ci)
         max_ci = max(g, key=lambda k: ci[k])
         print(max_ci, ci[max_ci])
+        ball_of_removed = get_ball(g, max_ci, r + 1)[0]
         remove_node(g, max_ci)
-        # ci = get_collective_influence(g, r + 1)
-        # pprint(ci)
-
-    
-    # max(g, key=lambda k: g[k])
+        for k in ball_of_removed:
+            ci[k] = get_collective_influence(g, k, r)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", help="use simple algorithm", action="store_true")
@@ -98,5 +98,4 @@ args = parser.parse_args()
 if args.c:
     destroy1(create_graph_from_file(args.input_file), args.num_nodes)
 else:
-    # get_collective_influence(create_graph_from_file(args.input_file), args.r)
     destroy2(create_graph_from_file(args.input_file), args.num_nodes, args.r)
