@@ -32,7 +32,9 @@ def get_number_of_neighbours(g, node):
     return len(g[node])
 
 def get_max_edges_node(g):
-    return max(g, key=lambda k: get_number_of_neighbours(g, k))
+    keys_sorted = list(g.keys())
+    keys_sorted.sort()
+    return max(keys_sorted, key=lambda k: get_number_of_neighbours(g, k))
 
 def remove_node(g, node):
     for x in g:
