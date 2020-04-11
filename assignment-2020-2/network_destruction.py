@@ -19,13 +19,13 @@ def create_graph_from_file(input_filenane):
     return g
 
 def draw_graph(g, name_param):
-    gr = Graph(format="png", name="graph" + name_param)
+    gr = Graph(format="png", name="graph" + name_param, engine="fdp", node_attr={'color': 'lightblue2', 'style': 'filled'})
     edges = []
     for k in g.keys():
-        gr.node(str(k), color="red")
+        gr.node(str(k))
         for n in g[k]:
             if n < k:
-                gr.edge(str(k), str(n), color="red") 
+                gr.edge(str(k), str(n)) 
     gr.view()
 
 def get_number_of_neighbours(g, node):
@@ -104,8 +104,8 @@ def destroy2(g, n, r, draw=False):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-c", help="use simple algorithm", action="store_true")
-parser.add_argument("-t", help="trace graph", action="store_true")
 parser.add_argument("-r", type=int, help="radius")
+parser.add_argument("-t", help="trace graph", action="store_true")
 parser.add_argument("num_nodes", type=int, help="number of nodes to be removed")
 parser.add_argument("input_file", help="name of file")
 
