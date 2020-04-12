@@ -1,4 +1,3 @@
-from pprint import pprint
 import argparse
 from collections import deque
 from graphviz import Graph
@@ -44,6 +43,8 @@ def remove_node(g, node):
     return g
 
 def destroy1(g, n, draw=False):
+    if draw:
+        draw_graph(g, "_initial")
     for i in range(n):
         max_edges_node = get_max_edges_node(g)
         print(max_edges_node, get_number_of_neighbours(g, max_edges_node))
@@ -91,8 +92,9 @@ def get_collective_influence(g, node, r):
 
 def destroy2(g, n, r, draw=False):
     ci = {k: get_collective_influence(g, k, r) for k in g.keys()}
+    if draw:
+        draw_graph(g, "_initial")
     for i in range(n):
-        # pprint(ci)
         max_ci = max(g, key=lambda k: ci[k])
         print(max_ci, ci[max_ci])
         ball_of_removed = get_ball(g, max_ci, r + 1)[0]

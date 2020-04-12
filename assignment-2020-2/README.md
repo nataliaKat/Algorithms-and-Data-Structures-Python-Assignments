@@ -1,5 +1,5 @@
 # Network Destruction
-The purpose of theese algorithms is to remove a number of nodes from a social network so that it is gradually decomposed. The first one is a simple approach removing the nodes with the largest number of neighbours. The second one is a bit more complex, as it decides which one to remove based on its "collective influence".
+The purpose of these algorithms is to remove a number of nodes from a social network so that it is gradually decomposed. The first one is a simple approach removing the nodes with the largest number of neighbours. The second one is a bit more complex, as it decides which one to remove based on its "collective influence".
 
 ## Usage
 ```bash
