@@ -31,8 +31,7 @@ def get_number_of_neighbours(g, node):
     return len(g[node])
 
 def get_max_edges_node(g):
-    keys_sorted = list(g.keys())
-    keys_sorted.sort()
+    keys_sorted = sorted(g)
     return max(keys_sorted, key=lambda k: get_number_of_neighbours(g, k))
 
 def remove_node(g, node):
@@ -59,7 +58,6 @@ def get_ball(g, i, r):
     max_node = max(g)
     visited = [False for k in range(max_node + 1)]
     inqueue = [False for k in range(max_node + 1)]
-
     level = 0
     q.appendleft((i, level))
     inqueue[i] = True
@@ -90,17 +88,24 @@ def get_collective_influence(g, node, r):
     ci = (get_number_of_neighbours(g, node) - 1) * sum
     return ci
 
+def get_max_infl_node(ci):
+    sort_keys = sorted(ci)
+    return max(sort_keys, key=lambda k: ci[k])
+
 def destroy2(g, n, r, draw=False):
     ci = {k: get_collective_influence(g, k, r) for k in g.keys()}
     if draw:
         draw_graph(g, "_initial")
     for i in range(n):
-        max_ci = max(g, key=lambda k: ci[k])
+        max_ci = get_max_infl_node(ci)
         print(max_ci, ci[max_ci])
+        if max_ci == 21 :
+            print(ci)
         ball_of_removed = get_ball(g, max_ci, r + 1)[0]
         remove_node(g, max_ci)
         if draw:
             draw_graph(g, str(i))
+        del ci[max_ci]
         for k in ball_of_removed:
             ci[k] = get_collective_influence(g, k, r)
 
