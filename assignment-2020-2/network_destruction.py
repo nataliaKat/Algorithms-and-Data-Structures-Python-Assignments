@@ -99,8 +99,6 @@ def destroy2(g, n, r, draw=False):
     for i in range(n):
         max_ci = get_max_infl_node(ci)
         print(max_ci, ci[max_ci])
-        if max_ci == 21 :
-            print(ci)
         ball_of_removed = get_ball(g, max_ci, r + 1)[0]
         remove_node(g, max_ci)
         if draw:
