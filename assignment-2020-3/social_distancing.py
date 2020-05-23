@@ -58,29 +58,28 @@ def delete_from_battlefront_dict(battlefront, key):
 
 
 def get_intersecting_circle(battlefront, ci, cm, cn):
-    inters_circles = []
+    middle = len(battlefront) // 2
+    inters = 0
     a = get_next(battlefront, cn)
-    while a != cm:
-        if do_circles_intersect(ci, a):
-            inters_circles.append(a)
+    b = get_previous(battlefront, cm)
+    for i in range(middle):
+        if do_circles_intersect(a, ci):
+            return (a, 1)
+        elif do_circles_intersect(b, ci):
+            return (b, 2)
         a = get_next(battlefront, a)
-    if inters_circles:
-        cj_first = inters_circles[0]
-        cj_last = inters_circles[-1]
-        
-        bnjf, bmjl = 0, 0
-        a = get_next(battlefront, cn)
-        while a != cj_first:
-            bnjf += 1
-            a = get_next(battlefront, a)
-        a = get_previous(battlefront, cm)
-        while a != cj_last:
-            bmjl += 1
-            a = get_previous(battlefront, a)
-        if bmjl < bnjf:
-            return (cj_last, 2)
-        return (cj_first, 1)
+        b = get_previous(battlefront, b)
     return 0
+
+def get_circle_dist_from_straight_line(c, u, v):
+    l2 = (u[0] - v[0]) ** 2 + (u[1] - v[1]) ** 2
+    if l2 == 0:
+        return math.sqrt((u[0] - c[0]) ** 2 + (u[1] - c[1]) ** 2)
+    t = ((c[0] - u[0]) * (v[0] - u[0]) + (c[1] - u[1]) * (v[1] - u[1])) / l2
+    t = max(0, min(1, t))
+    px = u[0] + t * (v[0] - u[0])
+    py = u[1] + t * (v[1] - u[1])
+    return math.sqrt((px - c[0]) ** 2 + (py - c[1]) ** 2)
 
 def step5(battlefront, ci, cm, cn, cj):
     cj, nearer = cj[0], cj[1]
@@ -173,5 +172,3 @@ while len(circles) < args.items:
         r = random.randint(lower, upper)
     main_alg(r)
 write_in_file(circles, args.output_file)
-
-# $ python social_distancing.py -i 11 --min_radius 2 --max_radius 25 -s 9 hello.txt
