@@ -17,19 +17,19 @@ def find_tangent_circle(cm, cn, r):
     return c
 
 
-def get_previous(d, element):
-    return list(d[element])[0]
+def get_previous(element):
+    return list(battlefront[element])[0]
 
 
-def get_next(d, element):
-    return list(d[element])[1]
+def get_next(element):
+    return list(battlefront[element])[1]
 
 
-def update_previous(battlefront, element, value):
+def update_previous(element, value):
     battlefront[element][0] = value
 
 
-def update_next(battlefront, element, value):
+def update_next(element, value):
     battlefront[element][1] = value
 
 
@@ -47,28 +47,33 @@ def do_circles_intersect(c1, c2):
         return True
     return False
 
+def delete_from_battlefront(items):
+    for k in items:
+        delete_from_battlefront_dict(k)
+        for n in battlefront_in_order:
+            if k == n[0]:
+                battlefront_in_order.remove(n)
+                break
 
-def delete_from_battlefront_dict(battlefront, key):
-    previous = get_previous(battlefront, key)
-    next = get_next(battlefront, key)
+def delete_from_battlefront_dict(key):
+    previous = get_previous(key)
+    next = get_next(key)
     del battlefront[key]
-    update_next(battlefront, previous, next)
-    update_previous(battlefront, next, previous)
-    return battlefront
+    update_next(previous, next)
+    update_previous(next, previous)
 
-
-def get_intersecting_circle(battlefront, ci, cm, cn):
+def get_intersecting_circle(ci, cm, cn):
     middle = len(battlefront) // 2
     inters = 0
-    a = get_next(battlefront, cn)
-    b = get_previous(battlefront, cm)
+    a = get_next(cn)
+    b = get_previous(cm)
     for i in range(middle):
         if do_circles_intersect(a, ci):
             return (a, 1)
         elif do_circles_intersect(b, ci):
             return (b, 2)
-        a = get_next(battlefront, a)
-        b = get_previous(battlefront, b)
+        a = get_next(a)
+        b = get_previous(b)
     return 0
 
 def get_circle_dist_from_straight_line(c, u, v):
@@ -81,23 +86,23 @@ def get_circle_dist_from_straight_line(c, u, v):
     py = u[1] + t * (v[1] - u[1])
     return math.sqrt((px - c[0]) ** 2 + (py - c[1]) ** 2)
 
-def step5(battlefront, ci, cm, cn, cj):
+def step5(ci, cm, cn, cj):
     cj, nearer = cj[0], cj[1]
     if nearer == 2:
-        a = get_next(battlefront, cj)
+        a = get_next(cj)
         while a != cn:
-            x = get_next(battlefront, a)
-            battlefront = delete_from_battlefront_dict(battlefront, a)
+            x = get_next(a)
+            battlefront = delete_from_battlefront_dict(a)
             for k in battlefront_in_order:
                 if k[0] == a:
                     battlefront_in_order.remove(k)
                     break
             a = x
         return 1
-    a = get_next(battlefront, cm)
+    a = get_next(cm)
     while a != cj:
-        x = get_next(battlefront, a)
-        battlefront = delete_from_battlefront_dict(battlefront, a)
+        x = get_next(a)
+        battlefront = delete_from_battlefront_dict(a)
         for k in battlefront_in_order:
             if k[0] == a:
                 battlefront_in_order.remove(k)
@@ -105,34 +110,49 @@ def step5(battlefront, ci, cm, cn, cj):
         a = x
     return 2
 
+def read_boundary_from_file(filename):  
+    boundaries = []
+    with open(filename) as bounds:
+        for line in bounds:
+            items = line.split()
+            u = (float(items[0]), float(items[1]))
+            v = (float(items[2]), float(items[3]))
+            boundaries.append((u, v))
+    return boundaries
 
-def write_in_file(circles, filename):
+def write_in_file(circles, filename, bounds = []):
     f = open(filename, 'w')
     for c in circles:
         x = "{:.2f}".format(c[0])
         y = "{:.2f}".format(c[1])
         line = x + ' ' + y + ' ' + str(c[2]) + '\n'
         f.write(line)
+    for l in bounds:
+        line = "{:.2f} {:.2f} {:.2f} {:.2f}\n".format(l[0][0], l[0][1], l[1][0], l[1][1])
+        f.write(line)
+        line = ""
+    # lines = [a for k in bounds for a in k]
+    # print(lines)
     f.close()
 
 
-def main_alg(r):
+def main_alg(r, history):
     cm = get_circle_nearest_to_beginning(battlefront_in_order)[0]
-    cn = get_next(battlefront, cm)
+    cn = get_next(cm)
     ci = find_tangent_circle(cm, cn, r)
-    inters = get_intersecting_circle(battlefront, ci, cm, cn)
+    inters = get_intersecting_circle(ci, cm, cn)
     while inters != 0:
-        temp = step5(battlefront, ci, cm, cn, inters)
+        temp = step5(ci, cm, cn, inters)
         if temp == 1:
             cm = inters[0]
         else:
             cn = inters[0]
         ci = find_tangent_circle(cm, cn, r)
-        inters = get_intersecting_circle(battlefront, ci, cm, cn)
+        inters = get_intersecting_circle(ci, cm, cn)
 
     battlefront[ci] = [cm, cn]
-    update_previous(battlefront, cn, ci)
-    update_next(battlefront, cm, ci)
+    update_previous(cn, ci)
+    update_next(cm, ci)
     battlefront_in_order.append((ci, find_circle_distance_from_00(ci)))
     circles.append(ci)
 
@@ -167,8 +187,14 @@ battlefront_in_order = [(c1, find_circle_distance_from_00(
     c1)), (c2, find_circle_distance_from_00(c2))]
 circles = [c1, c2]
 
+if args.items and args.b:
+    bounds = read_boundary_from_file(args.b)
+    if not args.radius:
+        r = random.randint(lower, upper)
+    main_alg(r, True)        
+
 while len(circles) < args.items:
     if not args.radius:
         r = random.randint(lower, upper)
-    main_alg(r)
+    main_alg(r, False)
 write_in_file(circles, args.output_file)
