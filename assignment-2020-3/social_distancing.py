@@ -1,5 +1,4 @@
 import math
-from pprint import pprint
 import argparse
 import random
 import sys
@@ -11,36 +10,29 @@ def find_tangent_circle(cm, cn, r):
     r1 = cm[2] + r
     r2 = cn[2] + r
     l = (r1 ** 2 - r2 ** 2 + d ** 2) / (2 * d ** 2)
-    e = 0
-    try:
-        e = math.sqrt(r1 ** 2 / d ** 2 - l ** 2)
-    except:
-        print("counter is", counter)
-        write_in_file(circles, args.output_file, bounds)
-        sys.exit()
+    e = math.sqrt(r1 ** 2 / d ** 2 - l ** 2)
     c = (round(cm[0] + l * dx - e * dy, 2),
          round(cm[1] + l * dy + e * dx, 2), r)
     return c
 
+def deep_copy(a, b):
+    for k in a.keys():
+        b[k] = []
+        for x in a[k]:
+            b[k].append(x)
+    return b
+
 def get_previous(element):
     return list(battlefront[element])[2]
-    # while prev in dead:
-    #     prev = list(battlefront[prev])[2]
-    # return prev
 
 def get_next(element):
     return list(battlefront[element])[3]
-    # while next in dead:
-    #     next = list(battlefront[next])[3]
-    # return next
 
 def update_previous(element, value):
     battlefront[element][2] = value
 
-
 def update_next(element, value):
     battlefront[element][3] = value
-
 
 def find_circle_distance_from_00(c):
     return round(math.sqrt(c[0] ** 2 + c[1] ** 2), 2)
@@ -79,12 +71,12 @@ def get_intersecting_circle(ci, cm, cn):
 def get_circle_dist_from_straight_line(c, u, v):
     l2 = (u[0] - v[0]) ** 2 + (u[1] - v[1]) ** 2
     if l2 == 0:
-        return math.sqrt((u[0] - c[0]) ** 2 + (u[1] - c[1]) ** 2)
+        return round(math.sqrt((u[0] - c[0]) ** 2 + (u[1] - c[1]) ** 2), 2)
     t = ((c[0] - u[0]) * (v[0] - u[0]) + (c[1] - u[1]) * (v[1] - u[1])) / l2
     t = max(0, min(1, t))
     px = u[0] + t * (v[0] - u[0])
     py = u[1] + t * (v[1] - u[1])
-    return math.sqrt((px - c[0]) ** 2 + (py - c[1]) ** 2)
+    return round(math.sqrt((px - c[0]) ** 2 + (py - c[1]) ** 2), 2)
 
 def does_circle_intersect_with_bounds(c):
     for str_line in bounds:
@@ -98,18 +90,13 @@ def step5(ci, cm, cn, cj):
         a = get_next(cj)
         while a != cn:
             x = get_next(a)
-            # dead.add(a)
             delete_from_battlefront(a)
-            # print("hey deleted somethin")
-            # deads_recently_added.add(a)
             a = x
         return 1
     a = get_next(cm)
     while a != cj:
         x = get_next(a)
-        # dead.add(a)
         delete_from_battlefront(a)
-        # deads_recently_added.add(a)
         a = x
     return 2
 
@@ -151,31 +138,21 @@ def are_all_dead():
     return True
 
 def main_alg(r, update_history=False):
-    # if update_history:
-    #     history.append(battlefront)
-
     cm = get_circle_nearest_to_beginning()
-
-    cm_tried.add(cm)
+    cm_first = cm
     cn = get_next(cm)
     ci = find_tangent_circle(cm, cn, r)
     inters = get_intersecting_circle(ci, cm, cn)
-    # print("inters is", inters)
     c = 0
     while inters != 0:
-        # print("just entering here")
         temp = step5(ci, cm, cn, inters)
-        if update_history:
-            # print("appending...", c)
-            history.append(battlefront)
-            c += 1
         if temp == 1:
             cm = inters[0]
         else:
             cn = inters[0]
         ci = find_tangent_circle(cm, cn, r)
         inters = get_intersecting_circle(ci, cm, cn)
-    return (ci, cm, cn)
+    return (ci, cm, cn, cm_first)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--items", type=int,
@@ -191,8 +168,6 @@ parser.add_argument("output_file", help="file to store results")
 
 args = parser.parse_args()
 
-# counter = Counter()
-# try:
 global counter
 counter = 2
 
@@ -209,105 +184,52 @@ c2 = (r1 + r2, 0.00, r2)
 battlefront = {c1: [1, find_circle_distance_from_00(c1), c2, c2],
             c2: [2, find_circle_distance_from_00(c2), c1, c1]
             }
-cm_tried = set()
 
 circles = [c1, c2]
 dead = set()
-deads_recently_added = set()
 
 if args.items and args.b:
     history = []
     bounds = read_boundary_from_file(args.b)
-    while len(circles) < args.items and len(dead) < len(battlefront):
-        cm_tried = set()
-        # deads_recently_added = set()
-        if not args.radius:
-            r = random.randint(lower, upper)
-        # pprint(battlefront)
-        result = main_alg(r, True)
-        # print(does_circle_intersect_with_bounds(result[0]))
-        if does_circle_intersect_with_bounds(result[0]):
-            # print("it indead does")
-            dead.add(result[1])
-            c = 0
-            while history:
-                # print("popping", c)
-                battlefront = history.pop()
-                c += 1
-            # pprint(battlefront)
-
-            # for k in deads_recently_added:
-                # print("removing", k)
-                # dead.remove(k)
-            # dead.remove(k for k in deads_recently_added)
-            # deads_recently_added.clear()
-            # dead.add(result[1])
-            # for cm in cm_tried:
-                # dead.add(cm)
-            # delete_from_battlefront(result[2])
-        else:
-            history.clear()
-            # print(result)
-            circles.append(result[0])
-            add_to_battlefront(result[0], result[1], result[2])
-            # dead.clear()
-        # print(dead)
-
-elif args.b:
-    history = []
-    print("using this")
-    # battlefront_in_order_history = []
-    bounds = read_boundary_from_file(args.b)
     radius_not_used = False
-    while not are_all_dead():
-        cm_tried = set()
-        deads_recently_added = set()
+    while counter < args.items and not are_all_dead():
         if not args.radius and not radius_not_used:
             r = random.randint(lower, upper)
-            print("r is", r)
-        # pprint(battlefront)
+        radius_not_used = True
+        old_battle = {}
+        deep_copy(battlefront, old_battle)
         result = main_alg(r, True)
-        # print(does_circle_intersect_with_bounds(result[0]))
         if does_circle_intersect_with_bounds(result[0]):
-            # print("it indead does")
-            dead.add(result[1])
-            c = 0
-            while history:
-                # print("popping", c)
-                battlefront = history.pop()
-                c += 1
-            radius_not_used = True
-            # pprint(battlefront)
-
-            # for k in deads_recently_added:
-                # print("removing", k)
-                # dead.remove(k)
-            # dead.remove(k for k in deads_recently_added)
-            # deads_recently_added.clear()
-            # dead.add(result[1])
-            # for cm in cm_tried:
-                # dead.add(cm)
-            # delete_from_battlefront(result[1])
+            battlefront = old_battle
+            old_history = {}
+            dead.add(result[3])
         else:
-            history.clear()
-
-            for k in deads_recently_added:
-                print("removing", k)
-                dead.remove(k)
-            # print(result)
             circles.append(result[0])
             add_to_battlefront(result[0], result[1], result[2])
             radius_not_used = False
+            dead.clear()
 
-            # print(dead)
-            # dead.clear()
-            # print(dead)
-        # print(dead)
-        # if len(battlefront) == len(dead):
-        #     print("battlefront is")
-        #     pprint(battlefront)
-        #     print("dead are")
-        #     pprint(dead)
+elif args.b:
+    history = []
+    bounds = read_boundary_from_file(args.b)
+    radius_not_used = False
+    while not are_all_dead():
+        if not args.radius and not radius_not_used:
+            r = random.randint(lower, upper)
+        radius_not_used = True
+        old_battle = {}
+        deep_copy(battlefront, old_battle)
+        result = main_alg(r, True)
+        if does_circle_intersect_with_bounds(result[0]):
+            battlefront = old_battle
+            old_history = {}
+            dead.add(result[3])
+        else:
+            circles.append(result[0])
+            add_to_battlefront(result[0], result[1], result[2])
+            radius_not_used = False
+            dead.clear()
+
 else:
     bounds = []
     while len(circles) < args.items:
@@ -316,14 +238,6 @@ else:
         result = main_alg(r)
         circles.append(result[0])
         add_to_battlefront(result[0], result[1], result[2])
-# except:
 
-    
-
-
-# while len(circles) < args.items:
-#     if not args.radius:
-#         r = random.randint(lower, upper)
-#     ci = main_alg(r, False)
-#     circles.append(ci)
+print(counter)
 write_in_file(circles, args.output_file, bounds)
