@@ -22,6 +22,9 @@ def deep_copy(a, b):
             b[k].append(x)
     return b
 
+def get_when_inserted(element):
+    return list(battlefront[element])[0]
+
 def get_previous(element):
     return list(battlefront[element])[2]
 
@@ -90,12 +93,14 @@ def step5(ci, cm, cn, cj):
         a = get_next(cj)
         while a != cn:
             x = get_next(a)
+            removed.append((a, get_when_inserted(a), get_previous(a), get_next(a)))
             delete_from_battlefront(a)
             a = x
         return 1
     a = get_next(cm)
     while a != cj:
         x = get_next(a)
+        removed.append((a, get_when_inserted(a), get_previous(a), get_next(a)))
         delete_from_battlefront(a)
         a = x
     return 2
@@ -124,12 +129,15 @@ def write_in_file(circles, filename, bounds = []):
             line = ""
     f.close()
 
-def add_to_battlefront(ci, cm, cn):
+def add_to_battlefront(element, previous, next, when):
+    battlefront[element] = [when, find_circle_distance_from_00(element), previous, next]
+    update_previous(next, element)
+    update_next(previous, element)
+
+def add_new_to_battlefront(ci, cm, cn):
     global counter
     counter += 1
-    battlefront[ci] = [counter, find_circle_distance_from_00(ci), cm, cn]
-    update_previous(cn, ci)
-    update_next(cm, ci)
+    add_to_battlefront(ci, cm, cn, counter)
 
 def are_all_dead():
     for k in battlefront.keys():
@@ -153,6 +161,27 @@ def main_alg(r, update_history=False):
         ci = find_tangent_circle(cm, cn, r)
         inters = get_intersecting_circle(ci, cm, cn)
     return (ci, cm, cn, cm_first)
+
+def crushing_with_bounds(result):
+    pass
+    
+def alg_with_bounds(r):
+    if not args.radius and r == -1:
+        r = random.randint(lower, upper)
+    radius_not_used = True
+    result = main_alg(r, True)
+    if does_circle_intersect_with_bounds(result[0]):
+        while removed:
+            k = removed.pop()
+            add_to_battlefront(k[0], k[2], k[3], k[1])
+        dead.add(result[3])
+        return r
+    removed.clear()
+    circles.append(result[0])
+    add_new_to_battlefront(result[0], result[1], result[2])
+    radius_not_used = False
+    dead.clear()
+    return -1
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--items", type=int,
@@ -189,46 +218,20 @@ circles = [c1, c2]
 dead = set()
 
 if args.items and args.b:
-    history = []
     bounds = read_boundary_from_file(args.b)
-    radius_not_used = False
+    if not args.radius:
+        r = -1
+    removed = []
     while counter < args.items and not are_all_dead():
-        if not args.radius and not radius_not_used:
-            r = random.randint(lower, upper)
-        radius_not_used = True
-        old_battle = {}
-        deep_copy(battlefront, old_battle)
-        result = main_alg(r, True)
-        if does_circle_intersect_with_bounds(result[0]):
-            battlefront = old_battle
-            old_history = {}
-            dead.add(result[3])
-        else:
-            circles.append(result[0])
-            add_to_battlefront(result[0], result[1], result[2])
-            radius_not_used = False
-            dead.clear()
+       r = alg_with_bounds(r)
 
 elif args.b:
-    history = []
     bounds = read_boundary_from_file(args.b)
-    radius_not_used = False
+    if not args.radius:
+        r = -1
+    removed = []
     while not are_all_dead():
-        if not args.radius and not radius_not_used:
-            r = random.randint(lower, upper)
-        radius_not_used = True
-        old_battle = {}
-        deep_copy(battlefront, old_battle)
-        result = main_alg(r, True)
-        if does_circle_intersect_with_bounds(result[0]):
-            battlefront = old_battle
-            old_history = {}
-            dead.add(result[3])
-        else:
-            circles.append(result[0])
-            add_to_battlefront(result[0], result[1], result[2])
-            radius_not_used = False
-            dead.clear()
+        r = alg_with_bounds(r)
 
 else:
     bounds = []
@@ -237,7 +240,7 @@ else:
             r = random.randint(lower, upper)
         result = main_alg(r)
         circles.append(result[0])
-        add_to_battlefront(result[0], result[1], result[2])
+        add_new_to_battlefront(result[0], result[1], result[2])
 
 print(counter)
 write_in_file(circles, args.output_file, bounds)
