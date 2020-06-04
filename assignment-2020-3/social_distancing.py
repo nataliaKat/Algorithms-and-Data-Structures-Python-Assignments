@@ -15,13 +15,6 @@ def find_tangent_circle(cm, cn, r):
          round(cm[1] + l * dy + e * dx, 2), r)
     return c
 
-def deep_copy(a, b):
-    for k in a.keys():
-        b[k] = []
-        for x in a[k]:
-            b[k].append(x)
-    return b
-
 def get_when_inserted(element):
     return list(battlefront[element])[0]
 
@@ -87,20 +80,22 @@ def does_circle_intersect_with_bounds(c):
             return True
     return False
 
-def step5(ci, cm, cn, cj):
+def step5(ci, cm, cn, cj, undo=False):
     cj, nearer = cj[0], cj[1]
     if nearer == 2:
         a = get_next(cj)
         while a != cn:
             x = get_next(a)
-            removed.append((a, get_when_inserted(a), get_previous(a), get_next(a)))
+            if undo:
+                removed.append((a, get_when_inserted(a), get_previous(a), get_next(a)))
             delete_from_battlefront(a)
             a = x
         return 1
     a = get_next(cm)
     while a != cj:
         x = get_next(a)
-        removed.append((a, get_when_inserted(a), get_previous(a), get_next(a)))
+        if undo:
+            removed.append((a, get_when_inserted(a), get_previous(a), get_next(a)))
         delete_from_battlefront(a)
         a = x
     return 2
@@ -122,7 +117,7 @@ def write_in_file(circles, filename, bounds = []):
         y = "{:.2f}".format(c[1])
         line = x + ' ' + y + ' ' + str(c[2]) + '\n'
         f.write(line)
-    if args.b:
+    if args.boundary_file:
         for l in bounds:
             line = "{} {} {} {}\n".format(l[0][0], l[0][1], l[1][0], l[1][1])
             f.write(line)
@@ -145,7 +140,7 @@ def are_all_dead():
             return False
     return True
 
-def main_alg(r, update_history=False):
+def main_alg(r, undo=False):
     cm = get_circle_nearest_to_beginning()
     cm_first = cm
     cn = get_next(cm)
@@ -153,7 +148,7 @@ def main_alg(r, update_history=False):
     inters = get_intersecting_circle(ci, cm, cn)
     c = 0
     while inters != 0:
-        temp = step5(ci, cm, cn, inters)
+        temp = step5(ci, cm, cn, inters, undo)
         if temp == 1:
             cm = inters[0]
         else:
@@ -161,14 +156,12 @@ def main_alg(r, update_history=False):
         ci = find_tangent_circle(cm, cn, r)
         inters = get_intersecting_circle(ci, cm, cn)
     return (ci, cm, cn, cm_first)
-
-def crushing_with_bounds(result):
-    pass
     
 def alg_with_bounds(r):
     if not args.radius and r == -1:
         r = random.randint(lower, upper)
-    radius_not_used = True
+    elif args.radius:
+        r = args.radius
     result = main_alg(r, True)
     if does_circle_intersect_with_bounds(result[0]):
         while removed:
@@ -179,20 +172,21 @@ def alg_with_bounds(r):
     removed.clear()
     circles.append(result[0])
     add_new_to_battlefront(result[0], result[1], result[2])
-    radius_not_used = False
     dead.clear()
+    if args.radius:
+        return r
     return -1
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--items", type=int,
                     help="number of circles to be created")
 parser.add_argument("-r", "--radius", type=int, help="radius of all circles")
-parser.add_argument("-s", "--seed", type=float, help="seed of random function")
 parser.add_argument("--min_radius", type=int,
                     help="minimum radius, combined with --max_radius")
 parser.add_argument("--max_radius", type=int,
                     help="maximum radius, combined with --min_radius")
-parser.add_argument("-b", "--b", help="give boundaries as x1 y1 x2 y2")
+parser.add_argument("-b", "--boundary_file", help="give boundaries as x1 y1 x2 y2")
+parser.add_argument("-s", "--seed", type=float, help="seed of random function")
 parser.add_argument("output_file", help="file to store results")
 
 args = parser.parse_args()
@@ -217,16 +211,19 @@ battlefront = {c1: [1, find_circle_distance_from_00(c1), c2, c2],
 circles = [c1, c2]
 dead = set()
 
-if args.items and args.b:
-    bounds = read_boundary_from_file(args.b)
+if args.boundary_file:
+    bounds = read_boundary_from_file(args.boundary_file)
+else:
+    bounds = []
+
+if args.items and args.boundary_file:
     if not args.radius:
         r = -1
     removed = []
     while counter < args.items and not are_all_dead():
        r = alg_with_bounds(r)
 
-elif args.b:
-    bounds = read_boundary_from_file(args.b)
+elif args.boundary_file:
     if not args.radius:
         r = -1
     removed = []
@@ -234,8 +231,7 @@ elif args.b:
         r = alg_with_bounds(r)
 
 else:
-    bounds = []
-    while len(circles) < args.items:
+    while counter < args.items:
         if not args.radius:
             r = random.randint(lower, upper)
         result = main_alg(r)
